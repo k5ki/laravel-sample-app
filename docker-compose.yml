@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  app:
+    image: laravel-sample-app
+    build:
+      context: ./docker/
+      dockerfile: ../compose/Dockerfile
+    volumes:
+      - type: bind
+        source: ./laravel-sample-app
+        target: /var/www/html
+      - type: bind
+        source: ./compose/app/php.conf.d/xdebug.ini
+        target: /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+    ports:
+      - "8080:80"
+    environment:
+      APP_ENV: local
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: laravel
+      DB_USERNAME: admin
+      DB_PASSWORD: admin
+    depends_on:
+      db:
+        condition: service_healthy
+    tty: true
+
+  db:
+    image: mysql/mysql-server:8.0.27
+    volumes:
+      - type: volume
+        source: mysql-volume
+        target: /var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: laravel
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    user: mysql
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    tty: true
+
+volumes:
+  mysql-volume:
